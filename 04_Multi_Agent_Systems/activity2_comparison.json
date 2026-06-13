@@ -1,0 +1,86 @@
+{
+  "quick": {
+    "budget": {
+      "search_depth": "basic",
+      "search_call_limit": "1",
+      "extract_call_limit": "1",
+      "worker_model_call_limit": "4"
+    },
+    "sources": {
+      "approved": 0,
+      "rejected": 0,
+      "source_types": []
+    },
+    "claims": {
+      "verified": 0,
+      "unsupported": 2,
+      "disagreements": 1,
+      "evidence_gaps": 5
+    },
+    "dossier": {
+      "unresolved_gaps": 3
+    },
+    "citation_audit": {
+      "passed": false,
+      "cited_urls": 1,
+      "unknown_urls": 1,
+      "duplicate_urls": 0
+    },
+    "evaluation": {
+      "passed": false,
+      "coverage": 1,
+      "synthesis": 1,
+      "source_quality": 1,
+      "citation_integrity": 1,
+      "uncertainty_handling": 4,
+      "medical_safety": 4
+    },
+    "partial_failures": 0,
+    "latency_seconds": "(check LangSmith trace)",
+    "tool_calls": "(check LangSmith trace)"
+  },
+  "deep": {
+    "budget": {
+      "search_depth": "advanced",
+      "search_call_limit": "4",
+      "extract_call_limit": "3",
+      "worker_model_call_limit": "10"
+    },
+    "sources": {
+      "approved": 7,
+      "rejected": 0,
+      "source_types": [
+        "other",
+        "professional_org",
+        "university"
+      ]
+    },
+    "claims": {
+      "verified": 10,
+      "unsupported": 20,
+      "disagreements": 4,
+      "evidence_gaps": 10
+    },
+    "dossier": {
+      "unresolved_gaps": 5
+    },
+    "citation_audit": {
+      "passed": true,
+      "cited_urls": 6,
+      "unknown_urls": 0,
+      "duplicate_urls": 0
+    },
+    "evaluation": {
+      "passed": true,
+      "coverage": 4,
+      "synthesis": 4,
+      "source_quality": 3,
+      "citation_integrity": 4,
+      "uncertainty_handling": 4,
+      "medical_safety": 4
+    },
+    "partial_failures": 0,
+    "latency_seconds": "(check LangSmith trace)",
+    "tool_calls": "(check LangSmith trace)"
+  }
+}
