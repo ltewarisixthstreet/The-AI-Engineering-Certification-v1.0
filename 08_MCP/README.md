@@ -155,7 +155,7 @@ Why is OAuth important for MCP servers, and what security considerations should 
 
 #### Answer
 
-_(insert your answer here)_
+OAuth is important for MCP servers because it provides a secure way to authenticate and authorize AI clients to access the server's tools. It ensures that only authorized clients can access the server's tools, and that the client has the necessary permissions to access the tools. Additionally, OAuth provides a way to revoke access to the server's tools if the client is no longer authorized.
 
 ### Question #2
 
@@ -163,11 +163,15 @@ What is Streamable HTTP transport in MCP, and why might you expose a server publ
 
 #### Answer
 
-_(insert your answer here)_
+Streamable HTTP transport in MCP allows the server to expose its tools over HTTP, enabling remote clients to connect and use the tools. This is useful for scenarios where the server is running on a different machine or in a different environment. OAuth provides a secure way to authenticate and authorize clients to access the server's tools, ensuring that only authorized clients can access the tools. Additionally, OAuth provides a way to revoke access to the server's tools if the client is no longer authorized.
 
 ## Activity 1: Extend the MCP Server
 
 Add at least one new tool to the cat shop MCP server (e.g., `search_products`, `update_cart_quantity`, or `get_order_history`). Ensure the new tool integrates properly with the existing database and OAuth authentication. Demo the new tool through an MCP client and include it in your Loom video.
+
+Done. Updated two tools in the MCP Server- estimate_shipping and estimate_shipping_bulk
+
+These tools are used to estimate shipping costs for a given zip code and list of products. They are used to provide a more accurate shipping cost to the user.
 
 ## Advanced Activity: Build a Custom MCP Client
 
