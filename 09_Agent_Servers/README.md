@@ -428,7 +428,7 @@ Why does LangSmith deploy your agent as an API backend only, and why do you stil
 
 #### Answer
 
-_(insert your answer here)_
+LangSmith deploys your agent as an API backend only because it is designed to be a server-side service that can be accessed by other applications. This allows you to build a frontend that can interact with your agent without exposing your API key to the client. Additionally, LangSmith provides a secure way to manage your API key and other sensitive information.
 
 ### Question #2
 
@@ -436,7 +436,7 @@ Why should the LangSmith API key live in a Next.js API route (server-side) inste
 
 #### Answer
 
-_(insert your answer here)_
+The LangSmith API key should live in a Next.js API route (server-side) instead of in the browser because it is a sensitive credential that should not be exposed to the client. If the API key were exposed in the browser, it could be accessed by anyone who inspects the page source or uses browser developer tools. This would allow unauthorized access to your LangSmith account and potentially lead to abuse or data theft.
 
 ## Activity 1: Build a Helpfulness Loop in Production
 

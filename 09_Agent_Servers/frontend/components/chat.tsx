@@ -14,12 +14,21 @@ import {
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Message,
+  MessageAvatar,
+  MessageContent,
+  MessageHeader,
+} from "@/components/ui/message";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { getMessageText, toolLabel } from "@/lib/messages";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 
@@ -170,63 +179,91 @@ function MessageRow({ message }: { message: StreamMessage }) {
   }
 
   return (
-    <div
-      className={cn(
-        "flex w-full items-start gap-3",
-        isHuman && "flex-row-reverse"
-      )}
-    >
-      <Avatar>
-        <AvatarFallback>
-          {isHuman ? (
-            <User className="size-4" />
-          ) : (
-            <Bot className="size-4" />
-          )}
-        </AvatarFallback>
-      </Avatar>
+    <Message align={isHuman ? "end" : "start"}>
+      <MessageAvatar>
+        <Avatar>
+          <AvatarFallback>
+            {isHuman ? (
+              <User className="size-4" />
+            ) : (
+              <Bot className="size-4" />
+            )}
+          </AvatarFallback>
+        </Avatar>
+      </MessageAvatar>
 
-      <div className={cn("flex max-w-[80%] flex-col gap-2", isHuman && "items-end")}>
+      <MessageContent>
         {toolCalls.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
+          <MessageHeader className="flex-wrap gap-1.5 px-0">
             {toolCalls.map((tc, idx) => (
               <Badge key={tc.id ?? idx} variant="secondary">
                 {toolIcon(tc.name)}
                 {toolLabel(tc.name)}
               </Badge>
             ))}
-          </div>
+          </MessageHeader>
         )}
 
         {text && (
-          <div
-            className={cn(
-              "rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap",
-              isHuman
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-foreground"
-            )}
-          >
-            {text}
-          </div>
+          <Bubble variant={isHuman ? "default" : "muted"}>
+            <BubbleContent>
+              {isHuman ? (
+                <span className="whitespace-pre-wrap">{text}</span>
+              ) : (
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                    ul: ({ children }) => <ul className="mb-2 ml-4 list-disc space-y-1 last:mb-0">{children}</ul>,
+                    ol: ({ children }) => <ol className="mb-2 ml-4 list-decimal space-y-1 last:mb-0">{children}</ol>,
+                    li: ({ children }) => <li>{children}</li>,
+                    strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                    em: ({ children }) => <em className="italic">{children}</em>,
+                    code: ({ children, className }) => {
+                      const isBlock = className?.includes("language-");
+                      return isBlock ? (
+                        <code className={cn("block rounded-md bg-black/10 dark:bg-white/10 px-3 py-2 font-mono text-xs overflow-x-auto", className)}>{children}</code>
+                      ) : (
+                        <code className="rounded bg-black/10 dark:bg-white/10 px-1 py-0.5 font-mono text-xs">{children}</code>
+                      );
+                    },
+                    pre: ({ children }) => <pre className="mb-2 last:mb-0 overflow-x-auto">{children}</pre>,
+                    blockquote: ({ children }) => <blockquote className="mb-2 border-l-2 border-current pl-3 opacity-70 last:mb-0">{children}</blockquote>,
+                    h1: ({ children }) => <h1 className="mb-2 text-base font-bold">{children}</h1>,
+                    h2: ({ children }) => <h2 className="mb-2 text-sm font-bold">{children}</h2>,
+                    h3: ({ children }) => <h3 className="mb-1 text-sm font-semibold">{children}</h3>,
+                    a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:opacity-80">{children}</a>,
+                  }}
+                >
+                  {text}
+                </ReactMarkdown>
+              )}
+            </BubbleContent>
+          </Bubble>
         )}
-      </div>
-    </div>
+      </MessageContent>
+    </Message>
   );
 }
 
 function ThinkingRow() {
   return (
-    <div className="flex w-full items-start gap-3">
-      <Avatar>
-        <AvatarFallback>
-          <Bot className="size-4" />
-        </AvatarFallback>
-      </Avatar>
-      <div className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-3 text-sm text-muted-foreground">
-        <Loader2 className="size-4 animate-spin" />
-        Thinking...
-      </div>
-    </div>
+    <Message align="start">
+      <MessageAvatar>
+        <Avatar>
+          <AvatarFallback>
+            <Bot className="size-4" />
+          </AvatarFallback>
+        </Avatar>
+      </MessageAvatar>
+      <MessageContent>
+        <Bubble variant="muted">
+          <BubbleContent className="flex items-center gap-2 text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            Thinking...
+          </BubbleContent>
+        </Bubble>
+      </MessageContent>
+    </Message>
   );
 }
