@@ -65,7 +65,22 @@ In `01_Cat_Health_Agent_Guardrails.ipynb`, input rails run in a specific order: 
 
 #### ✅ Answer
 
-_(insert your answer here)_
+**Why the ordering matters — it's a cost/latency/certainty funnel.** The deterministic rails (regex, keyword, allowlist matching) cost essentially nothing and run in microseconds; the model-based topical guard costs one model call and hundreds of milliseconds on *every* request that reaches it. So you run the cheapest, most certain checks first and let only the inputs that survive them "earn" the paid check. This has three payoffs in production:
+
+- **Cost.** A request that's an obvious emergency or injection attempt is caught for free and never triggers a paid guard call — or a paid agent call. Blocked/escalated requests spend zero model tokens.
+- **Latency.** The common cases exit early instead of waiting on a network round-trip to the guard model.
+- **Correctness/auditability.** Deterministic rails are exact, reproducible, and logged with the rail that fired and why. You put the unavoidable-but-probabilistic model judgment *last*, only where genuine judgment is actually needed (e.g., "is this even about cat health?"), which regex can't decide.
+
+The ordering also reflects severity: the emergency rail is the single most important guard, so it fires first and short-circuits before anything else can turn a poisoning report into a leisurely educational answer.
+
+**Why decisions, not booleans.** A pass/fail boolean throws away the information needed to respond correctly, and different violations demand fundamentally different handling:
+
+- `allow` → pass through unchanged.
+- `block` → refuse with a fixed safe message (e.g., injection attempts) — the model is never called.
+- `escalate` → short-circuit with an urgent redirect ("call your vet/poison control now"). This is the point of the whole system: for a health assistant, recognizing an emergency and *refusing to be a chatbot about it* is more important than filtering bad input. A boolean "fail" couldn't distinguish "refuse silently" from "escalate loudly."
+- `rewrite` → pass through, modified (PII redacted). The user did nothing wrong, so blocking would be wrong; we just strip contact details out of model context, logs, and traces before continuing.
+
+These decisions map directly onto middleware behavior: `escalate`/`block` return a canned message and jump to `end` (zero tokens), while `rewrite` edits the message in place and lets the loop continue. A boolean can't carry the action, the reason, or the "which rail fired" metadata that makes the guardrail debuggable — and a guardrail you can't audit is one you can't debug.
 
 ### ❓ Question #2
 
@@ -73,7 +88,14 @@ In `02_Cat_Health_Agent_Caching.ipynb`, a semantic cache can serve a paraphrased
 
 #### ✅ Answer
 
-_(insert your answer here)_
+**Why the threshold can't save you.** Embeddings measure how *alike two sentences look*, not *how much the difference between them matters*. "Is chicken a good treat for my cat?" and "Is chocolate poison for my cat?" are nearly identical in surface form — same structure, one swapped noun — so they land close together in embedding space, even though one is about dinner and the other is a poisoning emergency. Similarity is not equivalence. Whatever threshold you choose, there will always exist some pair of critically different queries whose cosine similarity sits just above it. Raise the threshold to exclude that pair and you start missing legitimate paraphrases (the whole reason you built a semantic cache); lower it and more dangerous collisions get through. There's no single number that separates "safe paraphrase" from "catastrophic near-duplicate," because the distinction isn't geometric. Worse, the failure is high-confidence: the chocolate-ingestion user gets a cheerful "chicken is a fine treat" answer served *faster and more confidently* than a live model would have.
+
+**What a production health agent should do instead:** don't rely on the threshold — gate the cache with a guardrail so high-stakes queries bypass it entirely.
+
+- **Route through the input rails first (Notebook 1).** If `run_input_rails` returns `escalate` (emergency), never consult *and* never populate the semantic cache for that query. Guardrails and caches aren't separate features — the rails decide what is *safe to cache*. Deterministic emergency detection is exactly the right gate because it keys on danger, not on surface similarity.
+- **Layer additional safety bounds on the cache:** a TTL so answers can't go stale (an emergency answer must never be served old), a bounded size with eviction, and per-user scoping so one user's cached context never leaks to another.
+
+In short: keep the cheap semantic cache for genuinely low-stakes, repetitive FAQ traffic, and force every high-stakes query straight to a fresh model call. The correctness win from bypassing the cache far outweighs the fraction of a cent it saves.
 
 ## Submitting Your Homework
 
