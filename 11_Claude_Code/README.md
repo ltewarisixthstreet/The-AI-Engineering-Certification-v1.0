@@ -66,7 +66,9 @@ While scaffolding in Task 3 you used **plan mode** before letting Claude Code wr
 
 #### ✅ Answer
 
-_(insert your answer here)_
+An agent that can run shell commands has the same power as the person at the keyboard: it can create, overwrite, and delete files, install packages, hit the network, spend money against API keys, and run destructive commands like `rm -rf`. Unlike a chat model that only produces text, these actions have real, often irreversible side effects on the machine and outside world. The agent is also non-deterministic — it can misunderstand the task or hallucinate a wrong command. A permission system puts a human checkpoint in front of consequential actions so the model proposes and the user approves, keeping a fallible autonomous process from acting unilaterally. It also lets you scope trust: cheap, reversible reads (Read/Glob/Grep) can be auto-allowed while writes and shell commands require confirmation.
+
+Plan mode is a read-only mode: Claude Code can explore and reason but cannot edit files or execute commands until you approve a plan. This is especially valuable on an empty directory because that first burst of scaffolding is where the most decisions get baked in at once — framework, project layout, dependencies, naming, config. Once files are written, undoing bad structural choices is expensive. Plan mode forces the agent to surface its intended approach *before* touching disk, so you can correct the direction (wrong framework, over-engineered structure, missing pieces) while it's still just text and cheap to change — turning a "generate and pray" scaffold into a review-then-commit workflow.
 
 ### ❓ Question #2
 
@@ -74,7 +76,11 @@ _(insert your answer here)_
 
 #### ✅ Answer
 
-_(insert your answer here)_
+**What belongs:** durable, high-signal facts the agent can't cheaply rediscover and that pay off on almost every task — how to run/build/test the app, the project layout and where key things live, non-obvious conventions and gotchas, the tech stack and versions, and standing preferences ("use uv, not pip"; "run the linter before committing"). The test is: is this stable, project-wide, and useful often enough to justify occupying context in *every* session?
+
+**What doesn't:** anything transient, narrow, or easily re-derived — a blow-by-blow of the current task, large code excerpts or full file contents (the agent can just read the file), one-off notes, secrets/API keys, and exhaustive documentation that only matters for a single feature. Bloating `CLAUDE.md` is actively harmful: it's a fixed tax on every session.
+
+**Relation to Session 3 (context management & memory):** the context window is a scarce, finite resource, and everything in it competes for the model's attention — irrelevant tokens dilute the signal and cost money/latency on every turn. `CLAUDE.md` is exactly the "persistent memory vs. working context" distinction from Session 3 made concrete: it's the small, curated long-term memory you *always* pay to load, so it should hold only the facts with the highest (relevance × frequency) payoff, while everything episodic stays out and is pulled into working context on demand (via reading files, retrieval, or tool calls) only when a specific task needs it.
 
 ### ❓ Question #3
 
@@ -82,7 +88,9 @@ The Agent SDK gives you the same agent loop that powers Claude Code. Compare thi
 
 #### ✅ Answer
 
-_(insert your answer here)_
+**What you get for free:** the entire production-grade agent loop that you wired by hand in LangGraph — the reason/act/observe cycle, tool-call parsing and dispatch, feeding results back into context, and looping until done. On top of that the SDK ships batteries the LangGraph builds didn't have: a built-in, battle-tested toolset (Read/Glob/Grep/Edit/Bash, etc.), the permission system and tool allowlisting, session persistence for conversation memory (resume via session IDs), context management/compaction as history grows, MCP server integration, and prompt-caching optimizations. You describe *what* the agent should do and hand it tools; you don't implement the orchestration, the state graph, or the tool-execution plumbing.
+
+**What you give up:** fine-grained control over the loop itself. With LangGraph you owned the state machine — you could define arbitrary nodes and edges, insert conditional branches, checkpoints, human-in-the-loop interrupts, parallel fan-out, and custom routing between steps, with full visibility into and control over state. The SDK's loop is largely opaque and opinionated: it runs Anthropic's fixed agentic loop, so you can't restructure control flow, swap in a non-Claude model, or intervene at arbitrary points — you influence behavior through the edges it exposes (system prompt, tool set, permissions, hooks/options) rather than by rewriting the graph. The trade is the usual one: less boilerplate and a proven loop, in exchange for less bespoke control and provider lock-in.
 
 ### ❓ Question #4
 
@@ -90,7 +98,11 @@ Your chat app could have called a chat completions API directly, the way you did
 
 #### ✅ Answer
 
-_(insert your answer here)_
+**What you gain:** a plain chat completion is a single turn of text in, text out — it can only answer from what's already in its context (and its training data), so to build the codebase concierge you'd have to manually fetch files, stuff them into the prompt, and hope you grabbed the right ones. Routing through `query()` gives the model *agency*: it can decide which files to read, Grep for a symbol, follow references, and iterate over multiple tool calls until it has actually gathered the evidence to answer — grounding responses in the real repository instead of guessing. You get retrieval, multi-step reasoning, and action for free, which is what turns "a chatbot about code" into "an agent that investigates the code."
+
+**New risks an agent with tools introduces:** the moment the model can act, it can act *wrongly*. It can read files it shouldn't (secrets, `.env`), run destructive or expensive shell commands, write/delete files, or hit the network — and because the browser exposes it to arbitrary user input, it's exposed to prompt injection: a malicious message (or malicious text inside a file it reads) could try to steer it into exfiltrating data or running harmful commands. A plain chat completion can only ever emit text, so none of these side-effect risks exist.
+
+**How the allowlist and permission mode addressed them:** I constrained the agent to a minimal, read-only tool allowlist — `Read`, `Glob`, `Grep`, plus my custom read-only tool — so it can *investigate* the repo but has no ability to write files, delete, or run arbitrary `Bash`. Whatever isn't on the allowlist simply isn't callable, which caps the blast radius of both agent mistakes and injection attempts to "read the repo," an action with no destructive side effects. Combined with a restrictive permission mode (denying anything outside the allowed set rather than prompting/auto-approving), this enforces least privilege: the concierge has exactly the capabilities it needs to answer questions and nothing more.
 
 ## Activity 1: Level Up the Chat App
 
